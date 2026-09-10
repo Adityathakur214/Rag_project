@@ -5,27 +5,33 @@ get_vectorstore() and doesn't care how embeddings actually happen.
 """
 
 import os
-from langchain_openai import OpenAIEmbeddings
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_chroma import Chroma
 
 
-def _get_embeddings():
-    model_name = "BAAI/bge-large-en-v1.5"
-    
-    return HuggingFaceEmbeddings(
-        model_name=model_name,
-        model_kwargs={'device': 'cpu'},
-        encode_kwargs={'normalize_embeddings': True}
-    )
+_embeddings = None  # cached after first load, reused for every later request
 
+
+def _get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        model = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+        api_key = os.getenv("HF_TOKEN")
+        if not api_key:
+            raise ValueError(
+                "HF_TOKEN is not set. Create a free 'Read' token at "
+                "https://huggingface.co/settings/tokens and add it to .env "
+                "(and to Render's Environment settings)."
+            )
+        _embeddings = HuggingFaceEndpointEmbeddings(
+            model=model,
+            task="feature-extraction",
+            huggingfacehub_api_token=api_key,
+        )
+    return _embeddings
 
 
 def build_vectorstore(chunks, persist_dir: str = None):
-    """
-    Embed `chunks` with OpenAI embeddings and persist them to a Chroma
-    vector store on disk. Run this once, offline, via run_ingestion.py.
-    """
     persist_dir = persist_dir or os.getenv("CHROMA_PERSIST_DIR", "vectorstore/chroma_db")
     embeddings = _get_embeddings()
 
@@ -38,11 +44,6 @@ def build_vectorstore(chunks, persist_dir: str = None):
 
 
 def get_vectorstore(persist_dir: str = None):
-    """
-    Load an already-persisted Chroma store from disk (no re-embedding).
-    This is what retrieval/retriever.py (Day 2) will call at request time —
-    the backend never re-runs ingestion, it just opens the existing index.
-    """
     persist_dir = persist_dir or os.getenv("CHROMA_PERSIST_DIR", "vectorstore/chroma_db")
     if not os.path.isdir(persist_dir):
         raise FileNotFoundError(
