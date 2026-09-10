@@ -124,8 +124,10 @@ Deployed as two separate free-tier services, keeping the backend/frontend split 
 
 1. New app → this repo → main file: `frontend/app.py`
 2. Advanced settings → Secrets:
+
+   STREAMLIT_URL="https://ragproject-fnz4iazg4d73l58gengrtf.streamlit.app/"
    ```
-   BACKEND_URL = "https://<your-render-backend>.onrender.com/ask"
+   BACKEND_URL = "https://document-chat-helper.onrender.com"
    ```
 
 ---
