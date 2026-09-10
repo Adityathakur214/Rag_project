@@ -42,7 +42,7 @@ if question:
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                response = requests.post(f"{BACKEND_URL}/ask", json={"question": question}, timeout=60)
+                response = requests.post(f"{BACKEND_URL}/ask", json={"question": question}, timeout=120)
                 response.raise_for_status()
                 data = response.json()
                 answer = data.get("answer", "")

@@ -219,9 +219,8 @@ __marimo__/
 .streamlit/secrets.toml
 
 # ChromaDB / Vector Store
-
+vectorstore/
 
 .venv/
 
 data/raw/
-

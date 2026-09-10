@@ -4,6 +4,8 @@ prompt, model, structured parsing) is imported from routing/, retrieval/,
 and generation/ — this file just plugs them together behind one endpoint.
 """
 
+from contextlib import asynccontextmanager
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -16,7 +18,16 @@ from generation.llm import get_llm
 from generation.prompt import RAG_PROMPT, GENERAL_PROMPT
 from generation.parser import answer_parser, AnswerSchema
 
-app = FastAPI(title="RAG Teaching API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Warm up embeddings + vectorstore at startup itself, so the first
+    # real user query never has to wait for the HF model download.
+    get_retriever()
+    yield
+
+
+app = FastAPI(title="RAG Teaching API", lifespan=lifespan)
 
 
 class AskRequest(BaseModel):
